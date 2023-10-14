@@ -5,9 +5,11 @@ import React from "react";
 
 const FullPageBackground = () => {
   // get the width and height of the viewport
-  const [viewportWidth, setViewportWidth] = React.useState(window.innerWidth);
+  const [viewportWidth, setViewportWidth] = React.useState(
+    document.body.clientWidth,
+  );
   const [viewportHeight, setViewportHeight] = React.useState(
-    window.innerHeight,
+    document.body.clientHeight,
   );
 
   React.useEffect(() => {
