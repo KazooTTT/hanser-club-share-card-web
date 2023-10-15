@@ -1,12 +1,20 @@
 {
   "dependencies": {
+    "ahooks": "^3.7.8",
     "classnames": "^2.3.2",
+    "dayjs": "^1.11.10",
+    "dom-to-image": "^2.6.0",
+    "file-saver": "^2.0.5",
     "next": "13.5.4",
+    "qrcode": "^1.5.3",
     "react": "^18",
     "react-dom": "^18"
   },
   "devDependencies": {
+    "@types/dom-to-image": "^2.6.5",
+    "@types/file-saver": "^2.0.5",
     "@types/node": "^20",
+    "@types/qrcode": "^1.5.2",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10",
@@ -24,7 +32,6 @@
     "dev": "next dev",
     "foramt": "prettier --write .",
     "lint": "next lint",
-    "preinstall": "npx only-allow yarn",
     "start": "next start"
   },
   "version": "0.1.0"

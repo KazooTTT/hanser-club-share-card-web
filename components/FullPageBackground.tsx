@@ -6,9 +6,10 @@ import React from "react";
 const FullPageBackground = () => {
   return (
     <Image
-      className="absolute inset-0 w-full h-full object-cover blur-md mix-blend-multiply filter brightness-50"
+      className="inset-0 w-full h-full object-cover blur-md mix-blend-multiply filter brightness-50"
       alt="main background image"
       src="/background.jpeg"
+      fill={true}
     />
   );
 };
