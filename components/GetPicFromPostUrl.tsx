@@ -38,8 +38,8 @@ const GetPicFromPostUrl = () => {
       });
       // get the base64 data
       var a = document.createElement("A");
-      a.href = data;
-      a.download = `${postInfo.title}.png`;
+      (a as HTMLAnchorElement).href = data;
+      (a as HTMLAnchorElement).download = `${postInfo.title}.png`;
       document.body.appendChild(a);
 
       a.click();
