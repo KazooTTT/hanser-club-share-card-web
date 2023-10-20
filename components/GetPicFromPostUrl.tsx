@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
-import LongPicPreview from "./LongPicPreview";
 import domtoimage from "dom-to-image";
+import { saveAs } from "file-saver";
 
 const GetPicFromPostUrl = () => {
   const [postUrl, setPostUrl] = useState("");
@@ -62,17 +62,17 @@ const GetPicFromPostUrl = () => {
     // post url is https://2550505.com/postDetails/140418
     // the reg should match start with https://2550505.com/postDetails/ and end with several numbers
     const reg = /^https:\/\/2550505\.com\/postDetails\/\d+$/;
-    let postId;
     if (!reg.test(postUrl)) {
       alert("请输入正确的帖子链接");
       return;
     } else {
-      postId = postUrl.split("postDetails/")[1];
-      const response = await fetch(`https://2550505.com/post/detail/${postId}`);
-      // parse the response
-      const data: PostData = await response.json();
-      console.log("data", data);
-      setPostInfo(data.info);
+      // getPicFromURL(postUrl);
+      const res = await fetch(`/api/getPicByUrl?postUrl=${postUrl}`);
+      // data is buffer
+      const data = await res.arrayBuffer();
+      // save the data to a image
+      const blob = new Blob([data], { type: "image/png" });
+      saveAs(blob, "pretty image.png");
     }
   }
   const componentRef = useRef<HTMLDivElement>(null);
@@ -101,9 +101,6 @@ const GetPicFromPostUrl = () => {
         >
           确认
         </button>
-      </div>
-      <div ref={componentRef}>
-        <LongPicPreview postInfo={postInfo} qrCodeUrl={qrCodeUrl} />
       </div>
     </div>
   );
