@@ -3,12 +3,15 @@ import pptr from "puppeteer";
 
 const getPicFromURL = async (url: string) => {
   // open url in the pptr
-  const browser = await pptr.launch();
+  let browser;
+  browser = await pptr.launch({
+    headless: true,
+  });
   const page = await browser.newPage();
   await page.goto(url, {
     waitUntil: "networkidle0",
   });
-  await page.setViewport({ width: 390, height: 844 });
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2 });
   await page.content();
 
   await page.addStyleTag({
@@ -29,10 +32,8 @@ const getPicFromURL = async (url: string) => {
       quality: 100,
       captureBeyondViewport: true,
     });
-    await browser.close();
-    return image;
   }
-
+  await page.close();
   return image;
 };
 

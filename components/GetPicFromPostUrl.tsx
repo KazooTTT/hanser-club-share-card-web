@@ -71,8 +71,8 @@ const GetPicFromPostUrl = () => {
       // data is buffer
       const data = await res.arrayBuffer();
       // save the data to a image
-      const blob = new Blob([data], { type: "image/png" });
-      saveAs(blob, "pretty image.png");
+      const blob = new Blob([data], { type: "image/jpeg" });
+      saveAs(blob, "2550505.jpg");
     }
   }
   const componentRef = useRef<HTMLDivElement>(null);
