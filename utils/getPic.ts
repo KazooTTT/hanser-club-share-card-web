@@ -1,12 +1,22 @@
-// import pptr
-import pptr from "puppeteer";
+import chromium from "@sparticuz/chromium-min";
+import puppeteer from "puppeteer-core";
+
+async function getBrowser() {
+  return puppeteer.launch({
+    args: [...chromium.args, "--hide-scrollbars", "--disable-web-security"],
+    defaultViewport: chromium.defaultViewport,
+    executablePath: await chromium.executablePath(
+      `https://github.com/Sparticuz/chromium/releases/download/v117.0.0/chromium-v116.0.0-pack.tar`,
+    ),
+    headless: chromium.headless,
+    ignoreHTTPSErrors: true,
+  });
+}
 
 const getPicFromURL = async (url: string) => {
   // open url in the pptr
-  let browser;
-  browser = await pptr.launch({
-    headless: true,
-  });
+  let browser = await getBrowser();
+
   const page = await browser.newPage();
   await page.goto(url, {
     waitUntil: "networkidle0",
