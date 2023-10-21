@@ -18,9 +18,7 @@ const getPicFromURL = async (url: string) => {
   let browser = await getBrowser();
 
   const page = await browser.newPage();
-  await page.goto(url, {
-    waitUntil: "networkidle0",
-  });
+  await page.goto(url);
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2 });
   await page.content();
 
