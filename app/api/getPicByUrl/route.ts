@@ -9,3 +9,8 @@ export async function GET(request: NextRequest) {
     });
   }
 }
+
+// This enables the function to run in the background for up to 15 minutes
+export const config = {
+  type: "experimental-background",
+};
