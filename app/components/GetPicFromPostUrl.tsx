@@ -1,9 +1,8 @@
-import { createRef, useCallback, useEffect, useRef, useState } from "react";
+import { createRef, useCallback, useEffect, useState } from "react";
 import QRCode from "qrcode";
 import LongPicPreview from "./LongPicPreview";
 import domtoimage from "dom-to-image";
-import saveAs from "file-saver";
-import classNames from "classnames";
+import { twMerge } from "tailwind-merge";
 
 const GetPicFromPostUrl = () => {
   const [postUrl, setPostUrl] = useState("");
@@ -13,6 +12,15 @@ const GetPicFromPostUrl = () => {
   const [qrCodeUrl, setQrCodeUrl] = useState("");
 
   const [urlToBase64, setUrlToBase64] = useState({});
+
+  const [config, setConfig] = useState({
+    showQrCode: false,
+  });
+
+  const [loading1, setLoading1] = useState(false);
+  const [loading2, setLoading2] = useState(false);
+  const [downloadReady, setDownloadReady] = useState(false);
+
   const getQrCodeUrl = useCallback(async () => {
     if (postUrl) {
       const qrCodeUrl = await QRCode.toDataURL(postUrl);
@@ -34,6 +42,8 @@ const GetPicFromPostUrl = () => {
       alert("请输入正确的帖子链接");
       return;
     } else {
+      setLoading1(true);
+      setDownloadReady(false);
       postId = postUrl.split("postDetails/")[1];
       const response = await fetch(`https://2550505.com/post/detail/${postId}`);
       // parse the response
@@ -69,6 +79,8 @@ const GetPicFromPostUrl = () => {
       };
       setPostInfo(newPostInfo);
     }
+    setLoading1(false);
+    setDownloadReady(true);
   }
 
   async function getUrlToBase64(imageList: string[]) {
@@ -87,6 +99,7 @@ const GetPicFromPostUrl = () => {
   const componentRef = createRef<HTMLDivElement>();
 
   const downloadImage = useCallback(async () => {
+    setLoading2(true);
     const element = componentRef.current;
     console.log("%c Line:68 🥖 element", "color:#6ec1c2", element);
     if (element) {
@@ -109,6 +122,7 @@ const GetPicFromPostUrl = () => {
       a.click();
       document.body.removeChild(a);
     }
+    setLoading2(false);
   }, [componentRef, postInfo.title]);
 
   return (
@@ -131,26 +145,45 @@ const GetPicFromPostUrl = () => {
             className="border-0 px-3 py-3 placeholder-blueGray-300 text-blueGray-600 relative bg-white rounded-lg text-sm shadow outline-none focus:outline-none focus:ring w-full"
           />
         </form>
-        <button
-          className="px-8 py-2 w-fit md:px-4 md:py-0 bg-palette-primary hover:bg-palette-dark text-white text-sm sm:text-base font-semibold rounded-lg border border-transparent
-          focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-palette-primary"
-          type="button"
-          onClick={handleSubmit}
-        >
-          确认
-        </button>
-        <button
-          className={`px-8 py-2 w-fit md:px-4 md:py-0 bg-palette-primary hover:bg-palette-dark text-white text-sm sm:text-base font-semibold rounded-lg border border-transparent
-          focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-palette-primary ${
-            Object.keys(postInfo).length === 0 &&
-            "cursor-not-allowed bg-gray-500 hover:bg-gray-600 focus-visible:bg-gray-600"
-          }`}
-          type="button"
-          disabled={Object.keys(postInfo).length === 0}
-          onClick={downloadImage}
-        >
-          下载
-        </button>
+        {loading1 ? (
+          <button
+            disabled
+            type="button"
+            className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 inline-flex items-center"
+          >
+            <svg
+              aria-hidden="true"
+              role="status"
+              className="inline w-4 h-4 mr-3 text-white animate-spin"
+              viewBox="0 0 100 101"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+                fill="#E5E7EB"
+              />
+              <path
+                d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                fill="currentColor"
+              />
+            </svg>
+            加载中
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="text-white bg-gradient-to-br from-purple-600 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2 mb-2"
+            onClick={handleSubmit}
+          >
+            确 认
+          </button>
+        )}
+        <DownloadButton
+          loading2={loading2}
+          downloadReady={downloadReady}
+          downloadImage={downloadImage}
+        />
       </div>
       <div className="max-h-96 overflow-auto my-8">
         <LongPicPreview
@@ -158,6 +191,7 @@ const GetPicFromPostUrl = () => {
           qrCodeUrl={qrCodeUrl}
           urlToBase64={urlToBase64}
           componentRef={componentRef}
+          config={config}
         />
       </div>
     </div>
@@ -165,3 +199,46 @@ const GetPicFromPostUrl = () => {
 };
 
 export default GetPicFromPostUrl;
+
+function DownloadButton({
+  loading2,
+  downloadReady,
+  downloadImage,
+}: {
+  loading2: boolean;
+  downloadReady: boolean;
+  downloadImage: () => Promise<void>;
+}) {
+  if (loading2)
+    return (
+      <button
+        disabled
+        type="button"
+        className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 inline-flex items-center"
+      >
+        下载中
+      </button>
+    );
+  else if (downloadReady) {
+    return (
+      <button
+        type="button"
+        className="text-gray-900 bg-gradient-to-r from-red-200 via-red-300 to-yellow-200 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-red-100 dark:focus:ring-red-400 font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2 mb-2"
+        onClick={downloadImage}
+      >
+        下 载
+      </button>
+    );
+  }
+
+  return (
+    <button
+      className="relative inline-flex items-center justify-center p-0.5 mb-2 mr-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-red-200 via-red-300 to-yellow-200 group-hover:from-red-200 group-hover:via-red-300 group-hover:to-yellow-200 dark:text-white dark:hover:text-gray-900 focus:outline-none focus:ring-red-100 dark:focus:ring-red-400 cursor-not-allowed"
+      disabled
+    >
+      <span className="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
+        下 载
+      </span>
+    </button>
+  );
+}

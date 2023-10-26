@@ -7,11 +7,13 @@ const LongPicPreview = ({
   qrCodeUrl,
   urlToBase64,
   componentRef,
+  config,
 }: {
   postInfo: PostDataInfo;
   qrCodeUrl: string;
   urlToBase64: Record<string, string>;
   componentRef: RefObject<HTMLDivElement>;
+  config: { showQrCode: boolean };
 }) => {
   return (
     Object.keys(postInfo).length > 0 &&
@@ -47,19 +49,21 @@ const LongPicPreview = ({
             __html: postInfo.content,
           }}
         />
-        <div className="float-right flex flex-col items-center justify-center mt-4">
-          <div className="text-sm">毛怪俱乐部</div>
-          <div className="qrCode">
-            <Image
-              src={qrCodeUrl}
-              alt="QRCode Image"
-              width={100}
-              height={100}
-              className="w-20 h-20"
-              objectFit="cover"
-            />
+        {config.showQrCode && (
+          <div className="float-right flex flex-col items-center justify-center mt-4">
+            <div className="text-sm">毛怪俱乐部</div>
+            <div className="qrCode">
+              <Image
+                src={qrCodeUrl}
+                alt="QRCode Image"
+                width={100}
+                height={100}
+                className="w-20 h-20"
+                objectFit="cover"
+              />
+            </div>
           </div>
-        </div>
+        )}
       </div>
     )
   );

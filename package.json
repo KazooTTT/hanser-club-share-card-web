@@ -10,7 +10,8 @@
     "puppeteer-core": "^21.4.0",
     "qrcode": "^1.5.3",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "tailwind-merge": "^1.14.0"
   },
   "devDependencies": {
     "@types/dom-to-image": "^2.6.5",
