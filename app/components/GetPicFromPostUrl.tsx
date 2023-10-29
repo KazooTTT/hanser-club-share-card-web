@@ -2,7 +2,6 @@ import { createRef, useCallback, useEffect, useState } from "react";
 import QRCode from "qrcode";
 import LongPicPreview from "./LongPicPreview";
 import domtoimage from "dom-to-image";
-import { twMerge } from "tailwind-merge";
 import { DownloadButton } from "./DownloadButton";
 
 const GetPicFromPostUrl = () => {
@@ -50,14 +49,22 @@ const GetPicFromPostUrl = () => {
       // parse the response
       const data: PostData = await response.json();
       console.log("data", data);
-      const newUrlToBase64 = await getUrlToBase64([
-        ...data.info.primaryPictures,
-        data.info.author.avatar,
-      ]);
-      setUrlToBase64(newUrlToBase64);
+
       const parser = new DOMParser();
       const doc = parser.parseFromString(data.info.content, "text/html");
       const imgTags = doc.querySelectorAll("img");
+      const imgSrcInTheContent: string[] = [];
+      imgTags.forEach((img) => {
+        const src = img.getAttribute("src");
+        if (src) imgSrcInTheContent.push(src);
+      });
+
+      // get all the img src from the data.info.content
+      const newUrlToBase64 = await getUrlToBase64([
+        ...imgSrcInTheContent,
+        data.info.author.avatar,
+      ]);
+      setUrlToBase64(newUrlToBase64);
       // 使用 forEach 迭代
       imgTags.forEach((img) => {
         // 处理每张图片
