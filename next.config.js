@@ -8,6 +8,10 @@ const nextConfig = {
       },
       {
         protocol: "https",
+        hostname: "2550505.com",
+      },
+      {
+        protocol: "https",
         hostname: "cdn.ihan.club",
       },
     ],
