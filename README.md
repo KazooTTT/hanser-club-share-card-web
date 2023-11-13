@@ -1,6 +1,15 @@
 # mgclub-share-card-web
-
+![Mgclub Share Card](https://github.com/KazooTTT/mgclub-share-card-web/assets/31075337/0842af6b-7c4a-485a-9d4e-5686ed6fbedf)
+输入毛吧的帖子链接，输出分享长图。
 input mgclub post url, output the long pic to share.
+
+## 开发意图
+因为毛吧的链接在例如qq这样的社交软件上是被屏蔽无法打开的，所以想着说想和朋友分享内容的话可以直接生成长图。
+
+## 远离
+使用的dom-to-image这个第三方库。
+由于dom-to-image本身未对跨域问题做处理，因此利用了nextjs的api，把图片在服务端下载转成base64，最后使用dom-to-image转成长图。
+
 
 # template
 
