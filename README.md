@@ -1,7 +1,9 @@
 # mgclub-share-card-web 毛怪俱乐部分享卡片
 ![Mgclub Share Card](https://github.com/KazooTTT/mgclub-share-card-web/assets/31075337/0842af6b-7c4a-485a-9d4e-5686ed6fbedf)
-输入毛吧的帖子链接，输出分享长图。
+输入毛吧的帖子链接，输出分享长图。  
 input mgclub post url, output the long pic to share.
+体验地址：  
+https://share255.kazoottt.top/
 
 ## 开发意图
 因为毛吧的链接在例如qq这样的社交软件上是被屏蔽无法打开的，所以想着说想和朋友分享内容的话可以直接生成长图。
