@@ -60,10 +60,15 @@ const GetPicFromPostUrl = () => {
       });
 
       // get all the img src from the data.info.content
-      const newUrlToBase64 = await getUrlToBase64([
-        ...imgSrcInTheContent,
-        data.info.author.avatar,
-      ]);
+      const newUrlToBase64: Record<string, string> = {};
+      // 使用 Promise.all() 并发获取所有图片的 base64 编码
+      await Promise.all(
+        [...imgSrcInTheContent,data.info.author.avatar].map(async (src) => {
+          const base64 = await getUrlToBase64(src);
+          newUrlToBase64[src] = base64;
+        }),
+      );
+
       setUrlToBase64(newUrlToBase64);
       // 使用 forEach 迭代
       imgTags.forEach((img) => {
@@ -91,17 +96,17 @@ const GetPicFromPostUrl = () => {
     setDownloadReady(true);
   }
 
-  async function getUrlToBase64(imageList: string[]) {
+  async function getUrlToBase64(imageUrl: string) {
     const res = await fetch("/api/images", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ imageList }),
+      body: JSON.stringify({ imageList: [imageUrl] }),
     });
     const data = await res.json();
     const { urlToBase64 } = data;
-    return urlToBase64;
+    return urlToBase64[imageUrl];
   }
 
   const componentRef = createRef<HTMLDivElement>();
@@ -175,7 +180,7 @@ const GetPicFromPostUrl = () => {
         />
         <label
           htmlFor="default-checkbox"
-          className="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+          className="ml-2 text-sm font-medium text-gray-300"
         >
           是否生成二维码
         </label>
@@ -237,4 +242,3 @@ function ConfirmButton({
     </button>
   );
 }
-
