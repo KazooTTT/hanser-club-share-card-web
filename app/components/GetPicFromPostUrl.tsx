@@ -36,7 +36,7 @@ const GetPicFromPostUrl = () => {
     // check and parse the url
     // post url is https://2550505.com/postDetails/140418
     // the reg should match start with https://2550505.com/postDetails/ and end with several numbers
-    const reg = /^https:\/\/2550505\.com\/postDetails\/\d+$/;
+    const reg = /^https:\/\/2550505\.com\/(postDetails|post)\/\d+$/;
     let postId;
     if (!reg.test(postUrl)) {
       alert("请输入正确的帖子链接");
