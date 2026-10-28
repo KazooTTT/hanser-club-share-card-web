@@ -20,6 +20,8 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next
 
 ## Getting Started
 
+开发和部署需要 Node.js 24，依赖使用 Yarn 1 管理。
+
 First, run the development server:
 
 ```bash

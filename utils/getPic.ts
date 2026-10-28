@@ -1,58 +1,25 @@
 import chromium from "@sparticuz/chromium-min";
-import puppeteer, { Page } from "puppeteer-core";
+import puppeteer from "puppeteer-core";
 
-async function getBrowser() {
-  return puppeteer.launch({
-    args: [...chromium.args, "--hide-scrollbars", "--disable-web-security"],
-    defaultViewport: chromium.defaultViewport,
-    executablePath: await chromium.executablePath(
-      `https://github.com/Sparticuz/chromium/releases/download/v116.0.0/chromium-v116.0.0-pack.tar`,
-    ),
-    headless: chromium.headless,
-    ignoreHTTPSErrors: true,
-  });
-}
-
-let _page: Page;
-async function getPage() {
-  if (_page) return _page;
-
-  const browser = await getBrowser();
-  _page = await browser.newPage();
-  return _page;
-}
+const chromiumPack = "https://github.com/Sparticuz/chromium/releases/download/v153.0.0/chromium-v153.0.0-pack.tar";
 
 const getPicFromURL = async (url: string) => {
-  // open url in the pptr
-
-  const page = await getPage();
-  await page.goto(url, {
-    waitUntil: "domcontentloaded",
+  const browser = await puppeteer.launch({
+    args: [...chromium.args, "--hide-scrollbars"],
+    executablePath: await chromium.executablePath(chromiumPack),
+    headless: true,
   });
-
-  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2 });
-
-  await page.addStyleTag({
-    content: ".layout-header {display:none !important}",
-  });
-
-  await page.addStyleTag({
-    content: ".layout-body {height:100vh !important}",
-  });
-
-  const contentEle = await page.$(".post-details__container .post-content");
-
-  let image;
-  if (contentEle) {
-    image = await contentEle.screenshot({
-      path: "2550505.jpeg",
-      type: "jpeg",
-      quality: 100,
-      captureBeyondViewport: true,
-    });
+  try {
+    const page = await browser.newPage();
+    await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2 });
+    await page.goto(url, { waitUntil: "domcontentloaded" });
+    await page.addStyleTag({ content: ".layout-header {display:none !important} .layout-body {height:100vh !important}" });
+    const content = await page.$(".post-details__container .post-content");
+    if (!content) return undefined;
+    return await content.screenshot({ type: "jpeg", quality: 100, captureBeyondViewport: true });
+  } finally {
+    await browser.close();
   }
-  await page.close();
-  return image;
 };
 
 export default getPicFromURL;

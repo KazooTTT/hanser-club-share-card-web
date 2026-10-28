@@ -5,7 +5,7 @@ export default function LongPicPreview({ postInfo, qrCodeUrl, urlToBase64, compo
   postInfo: PostDataInfo;
   qrCodeUrl: string;
   urlToBase64: Record<string, string>;
-  componentRef: RefObject<HTMLDivElement>;
+  componentRef: RefObject<HTMLDivElement | null>;
   config: { showQrCode: boolean };
 }) {
   return <div ref={componentRef} className="share-card">

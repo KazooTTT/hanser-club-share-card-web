@@ -16,8 +16,6 @@ const nextConfig = {
       },
     ],
   },
-  experimental: {
-    serverComponentsExternalPackages: ["puppeteer-core"],
-  },
+  serverExternalPackages: ["puppeteer-core"],
 };
 module.exports = nextConfig;
