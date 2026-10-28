@@ -85,13 +85,26 @@ export default function GetPicFromPostUrl() {
     if (!componentRef.current || !postInfo || downloading) return;
     setDownloading(true);
     setError("");
+    let exportContainer: HTMLDivElement | null = null;
     try {
-      const element = componentRef.current;
+      // Render at a consistent width regardless of the user's screen size.
+      // Keep the clone in the document so layout, images and fonts are resolved.
+      exportContainer = document.createElement("div");
+      exportContainer.style.cssText = "position:fixed;left:-10000px;top:0;width:600px;pointer-events:none;";
+      exportContainer.setAttribute("aria-hidden", "true");
+      const element = componentRef.current.cloneNode(true) as HTMLDivElement;
+      element.style.width = "600px";
+      exportContainer.appendChild(element);
+      document.body.appendChild(exportContainer);
+      await document.fonts.ready;
       await Promise.all(Array.from(element.querySelectorAll("img")).map((img) => img.decode().catch(() => undefined)));
-      const scale = Math.min(2, 16000 / element.offsetHeight);
+      const width = element.offsetWidth;
+      const height = element.offsetHeight;
+      // Respect browser canvas limits for unusually long posts.
+      const scale = Math.min(2, 16000 / height, Math.sqrt(24_000_000 / (width * height)));
       const data = await domtoimage.toPng(element, {
-        width: element.offsetWidth * scale, height: element.offsetHeight * scale,
-        style: { transform: `scale(${scale})`, transformOrigin: "top left", width: `${element.offsetWidth}px`, height: `${element.offsetHeight}px` },
+        width: Math.floor(width * scale), height: Math.floor(height * scale),
+        style: { transform: `scale(${scale})`, transformOrigin: "top left", width: `${width}px`, height: `${height}px` },
       });
       const link = document.createElement("a");
       link.href = data;
@@ -102,6 +115,7 @@ export default function GetPicFromPostUrl() {
     } catch {
       setError("图片生成失败，请重试；如果帖子太长，可以尝试在电脑上操作。");
     } finally {
+      exportContainer?.remove();
       setDownloading(false);
     }
   }
