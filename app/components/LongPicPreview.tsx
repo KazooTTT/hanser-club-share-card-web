@@ -10,7 +10,7 @@ export default function LongPicPreview({ postInfo, qrCodeUrl, urlToBase64, compo
 }) {
   return <article ref={componentRef} className="share-card">
     <div className="card-brand">
-      <span className="card-brand-icon">毛</span>
+      <img className="card-brand-icon" src="/club-icon.png" alt="" width={34} height={34} />
       <div><strong>毛怪俱乐部</strong><span>POST CARD</span></div>
       <span className="card-brand-dot">✦</span>
     </div>

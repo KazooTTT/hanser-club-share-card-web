@@ -12,7 +12,7 @@ a { color: inherit; text-decoration: none; }
 .app-shell { min-height: 100vh; background: radial-gradient(ellipse at 15% 0%, #fce9e3 0, transparent 36%), radial-gradient(ellipse at 90% 12%, #eee8f9 0, transparent 35%), #f8f7f7; }
 .app-header { max-width: 1200px; margin: auto; padding: 26px 32px; display: flex; justify-content: space-between; align-items: center; }
 .brand { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; }
-.brand-mark { width: 33px; height: 33px; display: grid; place-items: center; background: #ec8e80; color: white; border-radius: 11px; }
+.brand-mark { width: 33px; height: 33px; object-fit: contain; }
 .brand-divider { color: #c7bec0; font-weight: 400; }
 .back-link { font-size: 13px; color: #77717d; }
 .page-content { max-width: 1000px; margin: 52px auto 0; padding: 0 32px; display: grid; grid-template-columns: .8fr 1.2fr; gap: 64px; align-items: start; }
@@ -45,7 +45,7 @@ a { color: inherit; text-decoration: none; }
 /* The preview and the exported image share the same card layout. */
 .share-card { background: #fffdfb; border-radius: 8px; padding: 30px; color: #302a2d; overflow-wrap: anywhere; }
 .card-brand { display: flex; align-items: center; gap: 10px; padding-bottom: 27px; }
-.card-brand-icon { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 11px; background: #e49788; color: #fff; font-size: 16px; font-weight: 800; }
+.card-brand-icon { width: 34px; height: 34px; object-fit: contain; }
 .card-brand strong, .card-brand div span { display: block; }
 .card-brand strong { color: #5b484a; font-size: 12px; letter-spacing: .04em; }
 .card-brand div span { color: #c8aaa6; font-size: 9px; font-weight: 700; letter-spacing: .12em; margin-top: 2px; }

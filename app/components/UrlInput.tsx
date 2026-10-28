@@ -4,7 +4,7 @@ import GetPicFromPostUrl from "@/app/components/GetPicFromPostUrl";
 export function UrlInput() {
   return <main className="app-shell">
     <header className="app-header">
-      <a href="https://2550505.com" target="_blank" rel="noreferrer" className="brand"><span className="brand-mark">毛</span> 毛怪俱乐部 <span className="brand-divider">/</span> 分享卡片</a>
+      <a href="https://2550505.com" target="_blank" rel="noreferrer" className="brand"><img className="brand-mark" src="/club-icon.png" alt="" width={33} height={33} /> 毛怪俱乐部 <span className="brand-divider">/</span> 分享卡片</a>
       <a href="https://2550505.com" target="_blank" rel="noreferrer" className="back-link">前往毛怪俱乐部 ↗</a>
     </header>
     <div className="page-content">
