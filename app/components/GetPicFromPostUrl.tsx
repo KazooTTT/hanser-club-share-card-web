@@ -90,18 +90,23 @@ export default function GetPicFromPostUrl() {
       // Render at a consistent width regardless of the user's screen size.
       // Keep the clone in the document so layout, images and fonts are resolved.
       exportContainer = document.createElement("div");
-      exportContainer.style.cssText = "position:fixed;left:-10000px;top:0;width:600px;pointer-events:none;";
+      const exportWidth = 800;
+      exportContainer.style.cssText = `position:fixed;left:-10000px;top:0;width:${exportWidth}px;pointer-events:none;`;
       exportContainer.setAttribute("aria-hidden", "true");
       const element = componentRef.current.cloneNode(true) as HTMLDivElement;
-      element.style.width = "600px";
+      element.style.width = `${exportWidth}px`;
       exportContainer.appendChild(element);
       document.body.appendChild(exportContainer);
       await document.fonts.ready;
       await Promise.all(Array.from(element.querySelectorAll("img")).map((img) => img.decode().catch(() => undefined)));
       const width = element.offsetWidth;
       const height = element.offsetHeight;
-      // Respect browser canvas limits for unusually long posts.
-      const scale = Math.min(2, 16000 / height, Math.sqrt(24_000_000 / (width * height)));
+      // iOS limits canvas area to roughly 16 megapixels; other browsers can
+      // render larger images, preserving more detail in photos and text.
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      const maxPixels = isIOS ? 16_000_000 : 32_000_000;
+      const scale = Math.min(3, 16000 / height, Math.sqrt(maxPixels / (width * height)));
       const data = await domtoimage.toPng(element, {
         width: Math.floor(width * scale), height: Math.floor(height * scale),
         style: { transform: `scale(${scale})`, transformOrigin: "top left", width: `${width}px`, height: `${height}px` },
