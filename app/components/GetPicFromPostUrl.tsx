@@ -1,244 +1,128 @@
-import { createRef, useCallback, useEffect, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import QRCode from "qrcode";
-import LongPicPreview from "./LongPicPreview";
 import domtoimage from "dom-to-image";
-import { DownloadButton } from "./DownloadButton";
+import LongPicPreview from "./LongPicPreview";
 
-const GetPicFromPostUrl = () => {
+function parsePostUrl(value: string) {
+  try {
+    const url = new URL(value.trim());
+    if (!['http:', 'https:'].includes(url.protocol) || !['2550505.com', 'www.2550505.com'].includes(url.hostname)) return null;
+    const match = url.pathname.match(/^\/(?:post|postDetails)\/(\d+)\/?$/);
+    return match ? { id: match[1], url: `https://2550505.com/post/${match[1]}` } : null;
+  } catch {
+    return null;
+  }
+}
+
+export default function GetPicFromPostUrl() {
   const [postUrl, setPostUrl] = useState("");
-
-  const [postInfo, setPostInfo] = useState<PostDataInfo>({} as PostDataInfo);
-
+  const [postInfo, setPostInfo] = useState<PostDataInfo | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState("");
+  const [images, setImages] = useState<Record<string, string>>({});
+  const [showQrCode, setShowQrCode] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [error, setError] = useState("");
+  const componentRef = useRef<HTMLDivElement>(null);
 
-  const [urlToBase64, setUrlToBase64] = useState({});
-
-  const [config, setConfig] = useState({
-    showQrCode: false,
-  });
-
-  const [loading1, setLoading1] = useState(false);
-  const [loading2, setLoading2] = useState(false);
-  const [downloadReady, setDownloadReady] = useState(false);
-
-  const getQrCodeUrl = useCallback(async () => {
-    if (postUrl) {
-      const qrCodeUrl = await QRCode.toDataURL(postUrl);
-      setQrCodeUrl(qrCodeUrl);
-    }
-  }, [postUrl]);
-
-  useEffect(() => {
-    getQrCodeUrl();
-  }, [getQrCodeUrl]);
-
-  async function handleSubmit() {
-    // check and parse the url
-    // post url is https://2550505.com/postDetails/140418
-    // the reg should match start with https://2550505.com/postDetails/ and end with several numbers
-    const reg = /^https:\/\/2550505\.com\/postDetails\/\d+$/;
-    let postId;
-    if (!reg.test(postUrl)) {
-      alert("请输入正确的帖子链接");
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (loading) return;
+    const parsed = parsePostUrl(postUrl);
+    if (!parsed) {
+      setError("请输入有效的毛怪俱乐部帖子链接，例如 https://2550505.com/post/362091");
       return;
-    } else {
-      setLoading1(true);
-      setDownloadReady(false);
-      postId = postUrl.split("postDetails/")[1];
-      const response = await fetch(`https://2550505.com/post/detail/${postId}`);
-      // parse the response
-      const data: PostData = await response.json();
-      console.log("data", data);
-
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(data.info.content, "text/html");
-      const imgTags = doc.querySelectorAll("img");
-      const imgSrcInTheContent: string[] = [];
+    }
+    setLoading(true);
+    setError("");
+    setPostInfo(null);
+    try {
+      const response = await fetch(`/api/post?id=${parsed.id}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "帖子加载失败，请稍后重试");
+      const info: PostDataInfo = data.info;
+      const doc = new DOMParser().parseFromString(info.content, "text/html");
+      doc.querySelectorAll("script, style, iframe, object, embed, form, link, meta, svg").forEach((element) => element.remove());
+      doc.body.querySelectorAll("*").forEach((element) => {
+        Array.from(element.attributes).forEach((attribute) => {
+          if (attribute.name.startsWith("on") || attribute.name === "style" || (attribute.name === "href" && !/^https?:/i.test(attribute.value))) element.removeAttribute(attribute.name);
+        });
+      });
+      const imgTags = Array.from(doc.body.querySelectorAll("img"));
+      const sources = Array.from(new Set([...imgTags.map((img) => img.getAttribute("src")), info.author.avatar].filter((src): src is string => !!src)));
+      const [imageEntries, qr] = await Promise.all([
+        Promise.all(sources.map(async (src) => {
+          const response = await fetch(`/api/images?url=${encodeURIComponent(src)}`);
+          if (!response.ok) throw new Error("部分图片加载失败，请检查网络后重试");
+          const blob = await response.blob();
+          const dataUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = () => reject(new Error("图片读取失败，请重试"));
+            reader.readAsDataURL(blob);
+          });
+          return [src, dataUrl] as const;
+        })),
+        QRCode.toDataURL(parsed.url),
+      ]);
+      const urlToBase64 = Object.fromEntries(imageEntries);
       imgTags.forEach((img) => {
         const src = img.getAttribute("src");
-        if (src) imgSrcInTheContent.push(src);
+        if (src) img.setAttribute("src", urlToBase64[src]);
+        else img.remove();
       });
-
-      // get all the img src from the data.info.content
-      const newUrlToBase64: Record<string, string> = {};
-      // 使用 Promise.all() 并发获取所有图片的 base64 编码
-      await Promise.all(
-        [...imgSrcInTheContent,data.info.author.avatar].map(async (src) => {
-          const base64 = await getUrlToBase64(src);
-          newUrlToBase64[src] = base64;
-        }),
-      );
-
-      setUrlToBase64(newUrlToBase64);
-      // 使用 forEach 迭代
-      imgTags.forEach((img) => {
-        // 处理每张图片
-        const src = img.getAttribute("src");
-        // 设置 src 为 base64 编码
-        if (src) {
-          img.setAttribute("src", newUrlToBase64[src]);
-          // 设置类型为 base64
-          img.setAttribute("type", "image/jpeg"); // 或者图片的具体类型
-        } else if (img.className === "ProseMirror-separator") {
-          // remove it
-          img.parentElement?.removeChild(img);
-        }
-      });
-      const modifiedHtml = new XMLSerializer().serializeToString(doc);
-
-      const newPostInfo = {
-        ...data.info,
-        content: modifiedHtml,
-      };
-      setPostInfo(newPostInfo);
+      setImages(urlToBase64);
+      setQrCodeUrl(qr);
+      setPostInfo({ ...info, content: doc.body.innerHTML });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "加载失败，请稍后重试");
+    } finally {
+      setLoading(false);
     }
-    setLoading1(false);
-    setDownloadReady(true);
   }
 
-  async function getUrlToBase64(imageUrl: string) {
-    const res = await fetch("/api/images", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ imageList: [imageUrl] }),
-    });
-    const data = await res.json();
-    const { urlToBase64 } = data;
-    return urlToBase64[imageUrl];
+  async function downloadImage() {
+    if (!componentRef.current || !postInfo || downloading) return;
+    setDownloading(true);
+    setError("");
+    try {
+      const element = componentRef.current;
+      await Promise.all(Array.from(element.querySelectorAll("img")).map((img) => img.decode().catch(() => undefined)));
+      const scale = Math.min(2, 16000 / element.offsetHeight);
+      const data = await domtoimage.toPng(element, {
+        width: element.offsetWidth * scale, height: element.offsetHeight * scale,
+        style: { transform: `scale(${scale})`, transformOrigin: "top left", width: `${element.offsetWidth}px`, height: `${element.offsetHeight}px` },
+      });
+      const link = document.createElement("a");
+      link.href = data;
+      link.download = `${postInfo.title.replace(/[\\/:*?"<>|]/g, "_")}.png`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch {
+      setError("图片生成失败，请重试；如果帖子太长，可以尝试在电脑上操作。");
+    } finally {
+      setDownloading(false);
+    }
   }
 
-  const componentRef = createRef<HTMLDivElement>();
-
-  const downloadImage = useCallback(async () => {
-    setLoading2(true);
-    const element = componentRef.current;
-    console.log("%c Line:68 🥖 element", "color:#6ec1c2", element);
-    if (element) {
-      let data = await domtoimage.toPng(element, {
-        height: element.offsetHeight * 3,
-        width: element.offsetWidth * 3,
-        style: {
-          transform: "scale(" + 3 + ")",
-          transformOrigin: "top left",
-          width: element.offsetWidth + "px",
-          height: element.offsetHeight + "px",
-        },
-      });
-
-      var a = document.createElement("A");
-      (a as HTMLAnchorElement).href = data;
-      (a as HTMLAnchorElement).download = `${postInfo.title}.png`;
-      document.body.appendChild(a);
-
-      a.click();
-      document.body.removeChild(a);
-    }
-    setLoading2(false);
-  }, [componentRef, postInfo.title]);
-
-  return (
-    <div className="w-full">
-      <div
-        className={
-          "items-center justify-center md:items-stretch flex-col md:flex-row flex w-full px-4 md:space-x-3 md:space-y-0 space-y-3"
-        }
-      >
-        <form className="flex-1 w-full" onSubmit={handleSubmit}>
-          <input
-            type="text"
-            placeholder="请输入帖子链接"
-            onChange={(e) => setPostUrl(e.target.value)}
-            onKeyDown={async (e) => {
-              if (e.key === "Enter") {
-                await handleSubmit();
-              }
-            }}
-            className="border-0 px-3 py-3 placeholder-blueGray-300 text-blueGray-600 relative bg-white rounded-lg text-sm shadow outline-none focus:outline-none focus:ring w-full"
-          />
-        </form>
-        <ConfirmButton loading1={loading1} handleSubmit={handleSubmit} />
-        <DownloadButton
-          loading2={loading2}
-          downloadReady={downloadReady}
-          downloadImage={downloadImage}
-        />
+  return <div className="workspace">
+    <form onSubmit={handleSubmit} className="url-form">
+      <label htmlFor="post-url">帖子链接</label>
+      <div className="input-row">
+        <input id="post-url" type="url" inputMode="url" placeholder="https://2550505.com/post/…" value={postUrl} onChange={(event) => { setPostUrl(event.target.value); setError(""); }} aria-describedby="url-hint" />
+        <button className="primary-button" type="submit" disabled={loading}>{loading ? "正在生成…" : "生成预览"}</button>
       </div>
-      <div className="mt-3 flex items-center mb-4 justify-center">
-        <input
-          id="default-checkbox"
-          type="checkbox"
-          checked={config.showQrCode}
-          onChange={(e) => {
-            setConfig((old) => ({
-              ...old,
-              showQrCode: e.target.checked,
-            }));
-          }}
-          className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-        />
-        <label
-          htmlFor="default-checkbox"
-          className="ml-2 text-sm font-medium text-gray-300"
-        >
-          是否生成二维码
-        </label>
-      </div>
-      <div className="max-h-96 overflow-auto my-8">
-        <LongPicPreview
-          postInfo={postInfo}
-          qrCodeUrl={qrCodeUrl}
-          urlToBase64={urlToBase64}
-          componentRef={componentRef}
-          config={config}
-        />
-      </div>
+      <p id="url-hint" className="hint">支持新版和旧版帖子链接，粘贴后即可生成。</p>
+    </form>
+    <div className="options-row">
+      <label className="checkbox-label"><input type="checkbox" checked={showQrCode} onChange={(event) => setShowQrCode(event.target.checked)} />在卡片中显示帖子二维码</label>
+      <button type="button" className="download-button" disabled={!postInfo || loading || downloading} onClick={downloadImage}>{downloading ? "正在生成图片…" : "下载长图"}</button>
     </div>
-  );
-};
-
-export default GetPicFromPostUrl;
-
-function ConfirmButton({
-  loading1,
-  handleSubmit,
-}: {
-  loading1: boolean;
-  handleSubmit: () => Promise<void>;
-}) {
-  return loading1 ? (
-    <button
-      disabled
-      type="button"
-      className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 inline-flex items-center"
-    >
-      <svg
-        aria-hidden="true"
-        role="status"
-        className="inline w-4 h-4 mr-3 text-white animate-spin"
-        viewBox="0 0 100 101"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
-          fill="#E5E7EB"
-        />
-        <path
-          d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
-          fill="currentColor"
-        />
-      </svg>
-      加载中
-    </button>
-  ) : (
-    <button
-      type="button"
-      className="text-white bg-gradient-to-br from-purple-600 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2 mb-2"
-      onClick={handleSubmit}
-    >
-      确 认
-    </button>
-  );
+    {error && <p className="error-message" role="alert">{error}</p>}
+    <section className="preview-section" aria-label="卡片预览" aria-busy={loading}>
+      <div className="preview-heading"><strong>卡片预览</strong><span>{postInfo ? "确认内容后下载长图" : "生成后在这里查看"}</span></div>
+      {loading ? <div className="empty-preview" role="status">正在加载帖子和图片，请稍候…</div> : postInfo ? <div className="preview-scroll"><LongPicPreview postInfo={postInfo} qrCodeUrl={qrCodeUrl} urlToBase64={images} componentRef={componentRef} config={{ showQrCode }} /></div> : <div className="empty-preview"><span className="empty-icon">✦</span><p>把喜欢的帖子，变成一张分享卡片</p></div>}
+    </section>
+  </div>;
 }

@@ -1,35 +1,25 @@
-export async function POST(request: Request) {
-    // get the request body from the request
-    const res: {
-        imageList: string[]
-    } = await request.json()
-    console.log("%c Line:5 🌰 body", "color:#fca650", res);
+import { NextRequest, NextResponse } from "next/server";
 
-    const { imageList } = res;
-    const urlToBase64 = await imageList.reduce(async (accPromise, current) => {
-        const acc = await accPromise;
-        const base64 = await imageUrlToBase64(current) as string;
-        acc[current] = base64
-        return acc
-    }, Promise.resolve({} as Record<string, string>))
+const allowedHosts = new Set(["2550505.com", "cdn.2550505.com", "cdn.ihan.club"]);
+const maxImageSize = 20 * 1024 * 1024;
 
-    return Response.json({ urlToBase64 })
-}
-
-async function imageUrlToBase64(url: string) {
-    try {
-        const response = await fetch(url);
-
-        const blob = await response.arrayBuffer();
-
-        const contentType = response.headers.get('content-type');
-
-        const base64String = `data:${contentType};base64,${Buffer.from(
-            blob,
-        ).toString('base64')}`;
-
-        return base64String;
-    } catch (err) {
-        console.log(err);
-    }
+export async function GET(request: NextRequest) {
+  try {
+    const url = new URL(request.nextUrl.searchParams.get("url") || "");
+    if (url.protocol !== "https:" || !allowedHosts.has(url.hostname) || url.port) throw new Error("invalid image host");
+    const response = await fetch(url, { signal: AbortSignal.timeout(15000), redirect: "error" });
+    const type = response.headers.get("content-type") || "";
+    if (!response.ok || !response.body || !type.startsWith("image/") || type.includes("svg") || Number(response.headers.get("content-length")) > maxImageSize) throw new Error("invalid image");
+    let size = 0;
+    const body = response.body.pipeThrough(new TransformStream({
+      transform(chunk, controller) {
+        size += chunk.byteLength;
+        if (size > maxImageSize) throw new Error("image too large");
+        controller.enqueue(chunk);
+      },
+    }));
+    return new Response(body, { headers: { "Content-Type": type, "Cache-Control": "public, max-age=3600" } });
+  } catch {
+    return NextResponse.json({ error: "图片加载失败" }, { status: 502 });
+  }
 }
